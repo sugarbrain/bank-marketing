@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pandas
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.neural_network import MLPClassifier
+from sklearn import tree, preprocessing
 from sklearn.model_selection import KFold
 
 K_SPLITS = 10
@@ -39,15 +34,15 @@ for train_index, test_index in kf.split(X):
     y_train, y_test = Y[train_index], Y[test_index]
 
     param = {
-        "solver": "adam",
-        "hidden_layer_sizes": (5, 5),
-        "activation": "logistic",
-    }
+            "criterion": "entropy",
+            "max_depth": 6
+        }
     
-    clf = MLPClassifier(solver=param["solver"],
-                        hidden_layer_sizes=param["hidden_layer_sizes"],
-                        activation=param["activation"],
-                        random_state=42)
+    clf = tree.DecisionTreeClassifier(
+                criterion=param["criterion"],
+                max_depth=param["max_depth"],
+                random_state=42
+                )
 
     clf = clf.fit(X_train, y_train)
 
