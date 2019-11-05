@@ -40,8 +40,8 @@ for train_index, test_index in kf.split(X):
 
     param = {
         "solver": "adam",
-        "hidden_layer_sizes": (5, 5),
-        "activation": "logistic",
+        "hidden_layer_sizes": (30, 30),
+        "activation": "tanh",
     }
     
     clf = MLPClassifier(solver=param["solver"],
