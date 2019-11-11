@@ -1,9 +1,6 @@
 import pandas
-import matplotlib.pyplot as plt
+import numpy as np
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import KFold
 from sklearn import neighbors
 
