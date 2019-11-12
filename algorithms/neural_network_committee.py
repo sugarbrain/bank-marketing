@@ -1,17 +1,9 @@
 # Voting Ensemble for Classification
 import pandas
-from sklearn import model_selection
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import VotingClassifier
-# -*- coding: utf-8 -*-
-
-import pandas
-import matplotlib.pyplot as plt
 import numpy as np
+from sklearn import model_selection
+from sklearn.ensemble import VotingClassifier
 from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import KFold
