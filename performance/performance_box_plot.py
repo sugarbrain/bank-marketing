@@ -1,7 +1,5 @@
 import pandas
 import matplotlib.pyplot as plt
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
 from sklearn import tree
 from sklearn import model_selection
 from sklearn import preprocessing
@@ -88,28 +86,3 @@ ax = fig.add_subplot(111)
 plt.boxplot(results)
 ax.set_xticklabels(names)
 plt.show()
-
-for train_index, test_index in kfold.split(X,Y):
- 
-   X_train, X_test = X[train_index], X[test_index]
-   y_train, y_test = Y[train_index], Y[test_index]
-
-   param = {
-               "criterion": "gini",
-               "max_depth": 12
-           }
-   
-   clf = tree.DecisionTreeClassifier(
-               criterion=param["criterion"],
-               max_depth=param["max_depth"],
-               random_state=42
-               )
-
-   clf = clf.fit(X_train, y_train)
-   Y_test_prediction = clf.predict(X_test)
-
-print("Clasification report: \n", classification_report(y_test, Y_test_prediction))
-print("Confussion matrix: \n", confusion_matrix(y_test, Y_test_prediction))
-
-print("Acuracia: %0.3f" %  clf.score(X_train, y_train))
-print("Acuracia: %0.3f" %  clf.score(X_test, y_test))
