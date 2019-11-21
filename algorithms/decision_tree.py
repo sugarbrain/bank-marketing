@@ -33,10 +33,7 @@ for train_index, test_index in kf.split(X):
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = Y[train_index], Y[test_index]
 
-    param = {
-                "criterion": "gini",
-                "max_depth": 12
-            }
+    param = {'criterion': 'gini', 'max_depth': 11}
     
     clf = tree.DecisionTreeClassifier(
                 criterion=param["criterion"],
