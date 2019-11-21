@@ -10,7 +10,7 @@ from sklearn.linear_model import RidgeClassifier
 
 K_SPLITS = 10
 
-file_name = "../bank_additional_full.csv"
+file_name = "../datasets/bank_additional_full.csv"
 
 dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
 
