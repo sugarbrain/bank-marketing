@@ -1,113 +1,137 @@
 # -*- coding: utf-8 -*-
 
 import pandas
-from sklearn import preprocessing
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold
+from sklearn import preprocessing
+from sklearn import neighbors
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
-K_SPLITS = 10
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
 
-file_name = '../bank_additional_full.csv'
+SEED = 42
+np.random.seed(SEED)
 
-dataset = pandas.read_csv(file_name, sep=';', na_values='unknown')
-
-dataset.fillna(method='ffill', inplace=True)
-
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-    if dataset[column_name].dtype == object:
-        dataset = pandas.get_dummies(dataset, columns=[column_name])
-    else:
-        dataset[column_name] = ss.fit_transform(dataset[[column_name]])
-
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
-
-kf = KFold(n_splits=K_SPLITS)
-kf.get_n_splits(X)
+# Full train set
+train_file = "../datasets/train.csv"
 
 
-params = [
-        {
-            'n_estimators': 10,
-            'max_features': 7
-        },
-        {
-            'n_estimators': 16,
-            'max_features': None
-        },
-        {
-            'n_estimators': 4,
-            'max_features': 8
-        },
-        {
-            'n_estimators': 8,
-            'max_features': 10
-        },
-        {
-            'n_estimators': 4,
-            'max_features': 7
-        },
-        {
-            'n_estimators': 12,
-            'max_features': 6,
-        },
-        {
-            'n_estimators': 6,
-            'max_features': 12,
-        },
-        {
-            'n_estimators': 5,
-            'max_features': 7,
-        },
-        {
-            'n_estimators': 7,
-            'max_features': 4,
-        },
-        {
-            'n_estimators': 9,
-            'max_features': 6,
-        },
-    ]
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
 
-best_acc_mean = 0
-best_param = {}
+    test_size = 1.0 - size
 
-for param in params:
-    print(f"\nUsing param -> {param}\n")
-    
-    total_acc = 0
-    split_num = 1
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
 
-    for train_index, test_index in kf.split(X):
-   
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = Y[train_index], Y[test_index]
+    return train
 
+
+# Random Forest Params
+def generate_rf_params():
+    n_estimators = list(range(1, 50))
+    max_features = list(range(1, 50))
+
+    params = []
+
+    for num_estimators in n_estimators:
+        for num_max_features in max_features:
+            params.append({
+                "id": f"{num_estimators}_{num_max_features}",
+                "n_estimators": num_estimators,
+                "max_features": num_max_features
+            })
+
+    return params
+
+
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
+
+    return kf
+
+
+def run_rf_score(X, Y, params, kfold):
+    print("Busca de Parametros Random Forest")
+
+    all_scores = []
+
+    for param in params:
         clf = RandomForestClassifier(n_estimators=param['n_estimators'],
                                      max_features=param['max_features'],
                                      random_state=42)
-    
-        clf = clf.fit(X_train, y_train)
 
-        print(param)
+        scores = cross_val_score(clf, X, Y, cv=kfold)
 
-        score = clf.score(X_train, y_train)
+        mean = scores.mean()
 
-        print(f"Accuracy on split {split_num}: %0.3f" % score)
-        
-        total_acc += score
-        split_num += 1
+        all_scores.append({
+            "id": param["id"],
+            "n_estimators": param["n_estimators"],
+            "max_features": param["max_features"],
+            "result": mean
+        })
 
-    acc_mean = total_acc / K_SPLITS
-            
-    print("\n=============================================")
-    print(f"KFold's mean: {acc_mean}")
-    print("=============================================\n")
-    
-    if acc_mean > best_acc_mean:
-        best_acc_mean = acc_mean
-        best_param = param
-        
-print(f"Best accuracy mean: {best_acc_mean}")
-print(f"Best param: {best_param}")
+        print("%s | %0.4f" % (param["id"], mean))
+
+    best = max(all_scores, key=lambda s: s["result"])
+    print(f"Best param: {best}")
+    print(all_scores)
+    return all_scores
+
+
+def plot(scores):
+    plt.figure(figsize=(50, 8))
+    plt.margins(x=0.005)
+    x = list(map(lambda x: x["id"], scores))  # names
+    y = list(map(lambda x: x["result"], scores))  # scores
+
+    plt.plot(x, y, 'o--')
+    plt.suptitle('Busca de Parametros Random Forest')
+    plt.tight_layout()
+    plt.grid(linestyle='--')
+    plt.show()
+
+
+def print_markdown_table(scores):
+    print("Variação | *n_estimators* | *max_depth* | Acurácia média")
+    print("------ | ------- | -------- | ----------")
+
+    for s in scores:
+        name = s["id"]
+        n_estimators = s["n_estimators"]
+        max_depth = s["max_depth"]
+        result = '{:0.4f}'.format(s["result"])
+
+        print(f"{name} | {n_estimators} | {max_depth} | {result}")
+
+
+K_SPLITS = 10
+
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
+
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
+
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
+
+# Generate params
+params = generate_rf_params()
+
+# Run scoring for best params
+scores = run_rf_score(X, Y, params, kfold)
+
+# plot
+plot(scores)
+
+print_markdown_table(scores)

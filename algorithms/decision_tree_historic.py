@@ -1,83 +1,136 @@
 # -*- coding: utf-8 -*-
 
 import pandas
+import numpy as np
 from sklearn import tree, preprocessing
-from sklearn.model_selection import KFold
+from sklearn import neighbors
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
 
 SEED = 42
+np.random.seed(SEED)
+
+# Full train set
+train_file = "../datasets/train.csv"
+
+
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
+
+    test_size = 1.0 - size
+
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
+
+    return train
+
+
+# Decision Tree Params
+def generate_dt_params():
+    criterions = ["gini", "entropy"]
+    max_depth = list(range(1, 50))
+
+    params = []
+
+    for criterion in criterions:
+        for depth in max_depth:
+            params.append({
+                "id": criterion[0:3].upper() + str(depth),
+                "criterion": criterion,
+                "max_depth": depth
+            })
+
+    return params
+
+
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
+
+    return kf
+
+
+def run_dt_score(X, Y, params, kfold):
+    print("Busca de Parametros Decision Tree")
+
+    all_scores = []
+
+    for param in params:
+        clf = tree.DecisionTreeClassifier(criterion=param["criterion"],
+                                          max_depth=param["max_depth"],
+                                          random_state=SEED)
+
+        scores = cross_val_score(clf, X, Y, cv=kfold)
+
+        mean = scores.mean()
+
+        all_scores.append({
+            "id": param["id"],
+            "criterion": param["criterion"],
+            "max_depth": param["max_depth"],
+            "result": mean
+        })
+
+        print("%s | %0.4f" % (param["id"], mean))
+
+    best = max(all_scores, key=lambda s: s["result"])
+    print(f"Best param: {best}")
+    print(all_scores)
+    return all_scores
+
+
+def plot(scores):
+    plt.figure(figsize=(50, 8))
+    plt.margins(x=0.005)
+    x = list(map(lambda x: x["id"], scores))  # names
+    y = list(map(lambda x: x["result"], scores))  # scores
+
+    plt.plot(x, y, 'o--')
+    plt.suptitle('Busca de Parametros Decision Tree')
+    plt.tight_layout()
+    plt.grid(linestyle='--')
+    plt.show()
+
+
+def print_markdown_table(scores):
+    print("Variação | *criterion* | *max_depth* | Acurácia média")
+    print("------ | ------- | -------- | ----------")
+
+    for s in scores:
+        name = s["id"]
+        criterion = s["criterion"]
+        max_depth = s["max_depth"]
+        result = '{:0.4f}'.format(s["result"])
+
+        print(f"{name} | {criterion} | {max_depth} | {result}")
+
 
 K_SPLITS = 10
 
-file_name = "../datasets/bank_additional_full.csv"
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
 
-dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
 
-dataset.fillna(method='ffill', inplace=True)
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
 
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-    if dataset[column_name].dtype == object:
-        dataset = pandas.get_dummies(dataset, columns=[column_name])
-    else:
-        dataset[column_name] = ss.fit_transform(dataset[[column_name]])
+# Generate params
+params = generate_dt_params()
 
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
+# Run scoring for best params
+scores = run_dt_score(X, Y, params, kfold)
 
-kf = KFold(n_splits=K_SPLITS)
-kf.get_n_splits(X)
+# plot
+plot(scores)
 
-params = []
-    
-for depth in range(1, 12):
-    params.append({
-                "criterion": "gini",
-                "max_depth": depth
-            })
-for depth in range(1, 12):
-    params.append({
-                "criterion": "entropy",
-                "max_depth": depth
-            })
-
-best_acc_mean = 0
-best_param = {}
-
-for param in params:
-    print(f"\nUsing param -> {param}\n")
-    
-    total_acc = 0
-    split_num = 1
-    
-    for train_index, test_index in kf.split(X):
-        
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = Y[train_index], Y[test_index]
-
-        clf = tree.DecisionTreeClassifier(
-                criterion=param["criterion"],
-                max_depth=param["max_depth"],
-                random_state=SEED
-                )
-
-        clf = clf.fit(X_train, y_train)
-        
-        score = clf.score(X_train, y_train)
-
-        print(f"Accuracy on split {split_num}: %0.3f" % score)
-        
-        total_acc += score
-        split_num += 1
-
-    acc_mean = total_acc / K_SPLITS
-        
-    print("\n=============================================")
-    print(f"KFold's mean: {acc_mean}")
-    print("=============================================\n")
-    
-    if acc_mean > best_acc_mean:
-        best_acc_mean = acc_mean
-        best_param = param
-        
-print(f"Best accuracy mean: {best_acc_mean}")
-print(f"Best param: {best_param}")
+print_markdown_table(scores)

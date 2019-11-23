@@ -1,317 +1,140 @@
 # -*- coding: utf-8 -*-
 
 import pandas
-import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import preprocessing
+from sklearn import neighbors
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import KFold
+
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
+
+SEED = 42
+np.random.seed(SEED)
+
+# Full train set
+train_file = "../datasets/train.csv"
+
+
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
+
+    test_size = 1.0 - size
+
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
+
+    return train
+
+
+# Neural Networks Params
+def generate_nn_params():
+    solvers = ["lbfgs", "sgd", "adam"]
+    # hidden_layer_sizes = (neurons_per_layer, number_of_layers)
+    neurons_per_layer = list(range(1, 51))
+    number_of_layers = list(range(1, 3))
+
+    params = []
+
+    for solver in solvers:
+        for num_layers in number_of_layers:
+            for num_neurons in neurons_per_layer:
+                params.append({
+                    "id": f"{solver[0:3].upper()}_{num_neurons}_{num_layers}",
+                    "solver": solver,
+                    "hidden_layer_sizes": (num_neurons, num_layers)
+                })
+
+    return params
+
+
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
+
+    return kf
+
+
+def run_nn_score(X, Y, params, kfold):
+    print("Busca de Parametros Neural Networks")
+
+    all_scores = []
+
+    for param in params:
+        clf = MLPClassifier(solver=param["solver"],
+                            hidden_layer_sizes=param["hidden_layer_sizes"],
+                            random_state=SEED)
+
+        scores = cross_val_score(clf, X, Y, cv=kfold)
+
+        mean = scores.mean()
+
+        all_scores.append({
+            "id": param["id"],
+            "solver": param["solver"],
+            "hidden_layer_sizes": param["hidden_layer_sizes"],
+            "result": mean
+        })
+
+        print("%s | %0.4f" % (param["id"], mean))
+
+    best = max(all_scores, key=lambda s: s["result"])
+    print(f"Best param: {best}")
+    print(all_scores)
+    return all_scores
+
+
+def plot(scores):
+    plt.figure(figsize=(50, 8))
+    plt.margins(x=0.005)
+    x = list(map(lambda x: x["id"], scores))  # names
+    y = list(map(lambda x: x["result"], scores))  # scores
+
+    plt.plot(x, y, 'o--')
+    plt.suptitle('Busca de Parametros Neural Networks')
+    plt.tight_layout()
+    plt.grid(linestyle='--')
+    plt.show()
+
+
+def print_markdown_table(scores):
+    print("Variação | *solver* | *hidden_layer_sizes* | Acurácia média")
+    print("------ | ------- | -------- | ----------")
+
+    for s in scores:
+        name = s["id"]
+        solver = s["solver"]
+        sizes = s["hidden_layer_sizes"]
+        result = '{:0.4f}'.format(s["result"])
+
+        print(f"{name} | {solver} | {sizes} | {result}")
+
 
 K_SPLITS = 10
 
-file_name = "../datasets/bank_additional_full.csv"
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
 
-dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
 
-dataset.fillna(method='ffill', inplace=True)
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
 
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-    if dataset[column_name].dtype == object:
-        dataset = pandas.get_dummies(dataset, columns=[column_name])
-    else:
-        dataset[column_name] = ss.fit_transform(dataset[[column_name]])
+# Generate params
+params = generate_nn_params()
 
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
+# Run scoring for best params
+scores = run_nn_score(X, Y, params, kfold)
 
-params = [
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "relu",
-    },
-    {
-        "solver": "lbfgs",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "relu",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "relu",
-    },
-    {
-        "solver": "sgd",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "relu",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "identity",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "identity",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "logistic",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "logistic",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "tanh",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "tanh",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 3),
-        "activation": "relu",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (3, 30),
-        "activation": "relu",
-    },
-    {
-        "solver": "adam",
-        "hidden_layer_sizes": (30, 30),
-        "activation": "relu",
-    },
-]
+# plot
+plot(scores)
 
-
-kf = KFold(n_splits=K_SPLITS)
-kf.get_n_splits(X)
-
-best_acc_mean = 0
-best_param = {}
-
-for param in params:
-    
-    print(f"\nUsing param -> {param}\n")
-    
-    total_acc = 0
-    split_num = 1
-    
-    for train_index, test_index in kf.split(X):
-   
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = Y[train_index], Y[test_index]
-
-        clf = MLPClassifier(solver=param["solver"],
-                            hidden_layer_sizes=param["hidden_layer_sizes"],
-                            activation=param["activation"],
-                            random_state=42)
-    
-        clf = clf.fit(X_train, y_train)
-    
-        print(f"Accuracy on split {split_num}: %0.3f" % clf.score(X_train, 
-                                                                  y_train))
-        
-        total_acc += clf.score(X_train, y_train)
-        split_num += 1
-    
-    acc_mean = total_acc / K_SPLITS
-            
-    print("\n=============================================")
-    print(f"KFold's mean: {acc_mean}")
-    print("=============================================\n")
-    
-    if acc_mean > best_acc_mean:
-        best_acc_mean = acc_mean
-        best_param = param
-        
-print(f"Best accuracy mean: {best_acc_mean}")
-print(f"Best param: {best_param}")
-    
+print_markdown_table(scores)
