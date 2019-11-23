@@ -3,8 +3,6 @@
 import pandas
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn import preprocessing
-from sklearn import neighbors
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -35,17 +33,18 @@ def get_train_set(filepath, size=0.20):
 
 # Random Forest Params
 def generate_rf_params():
-    n_estimators = list(range(1, 50))
-    max_features = list(range(1, 50))
+    n_estimators = list(range(1, 33))
+    max_features = ["sqrt", "log2", None]
 
     params = []
 
-    for num_estimators in n_estimators:
-        for num_max_features in max_features:
+    for feat in max_features:
+        for num_estimators in n_estimators:
+            features = str(feat)[0:1].upper()
             params.append({
-                "id": f"{num_estimators}_{num_max_features}",
+                "id": f"{features}{num_estimators}",
                 "n_estimators": num_estimators,
-                "max_features": num_max_features
+                "max_features": feat
             })
 
     return params
@@ -101,16 +100,16 @@ def plot(scores):
 
 
 def print_markdown_table(scores):
-    print("Variação | *n_estimators* | *max_depth* | Acurácia média")
+    print("Variação | *n_estimators* | *max_features* | Acurácia média")
     print("------ | ------- | -------- | ----------")
 
     for s in scores:
         name = s["id"]
         n_estimators = s["n_estimators"]
-        max_depth = s["max_depth"]
+        max_features = s["max_features"]
         result = '{:0.4f}'.format(s["result"])
 
-        print(f"{name} | {n_estimators} | {max_depth} | {result}")
+        print(f"{name} | {n_estimators} | {max_features} | {result}")
 
 
 K_SPLITS = 10
