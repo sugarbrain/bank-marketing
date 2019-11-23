@@ -35,7 +35,7 @@ def get_train_set(filepath, size=0.20):
 # Decision Tree Params
 def generate_dt_params():
     criterions = ["gini", "entropy"]
-    max_depth = list(range(1, 50))
+    max_depth = list(range(1, 51))
 
     params = []
 
