@@ -1,0 +1,8 @@
+sgd43_2 result mean: 0.9082
+sgd6_1 result mean: 0.8951
+sgd18_2 result mean: 0.9045
+sgd36_1 result mean: 0.8954
+ada2_1 result mean: 0.9014
+
+Neural network committee (hard) score: 0.9064
+Neural network committee (soft) score: 0.8993

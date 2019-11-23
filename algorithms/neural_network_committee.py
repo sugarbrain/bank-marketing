@@ -1,67 +1,114 @@
-# Voting Ensemble for Classification
 import pandas
 import numpy as np
-from sklearn import model_selection
-from sklearn.ensemble import VotingClassifier
-from sklearn import preprocessing
-from sklearn.preprocessing import LabelEncoder
+from sklearn import tree
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import KFold
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn import model_selection
+
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
+
+SEED = 42
+np.random.seed(SEED)
+
+# Full train set
+train_file = "../datasets/train.csv"
+
+
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
+
+    test_size = 1.0 - size
+
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
+
+    return train
+
+
+def get_estimators():
+    # Classifiers with best params
+    sgd43_2 = MLPClassifier(solver = 'sgd', 
+                            hidden_layer_sizes=(42,2)) # 0.908
+    sgd6_1 = MLPClassifier(solver = 'sgd', 
+                           hidden_layer_sizes=(6,1)) # 0.907    
+    sgd18_2 = MLPClassifier(solver = 'sgd',
+                            hidden_layer_sizes=(18,2)) # 0.907
+    sgd36_1 = MLPClassifier(solver = 'sgd',
+                            hidden_layer_sizes=(36,1)) # 0.907
+    ada2_1 = MLPClassifier(solver = 'adam', 
+                           hidden_layer_sizes=(2,1)) # 0.907
+
+    estimators = [
+        ('sgd43_2', sgd43_2),
+        ('sgd6_1', sgd6_1),
+        ('sgd18_2', sgd18_2),
+        ('sgd36_1', sgd36_1),
+        ('ada2_1', ada2_1),
+    ]
+    return estimators
+
+
+def fit_single_models(X, Y, estimators, kfold):
+    results = list()
+
+    for name, clf in estimators:
+        result = model_selection.cross_val_score(clf, X, Y, cv=kfold)
+        results.append((name, result.mean()))
+
+    return results
+
+
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
+
+    return kf
+
+
+def run_neural_network_committee_score(X, Y, estimators, voting_option, kfold):
+
+    # create the ensemble model
+    ensemble = VotingClassifier(estimators, voting=voting_option)
+    results = model_selection.cross_val_score(ensemble, X, Y, cv=kfold)
+
+    return results.mean()
 
 K_SPLITS = 10
 
-file_name = "../datasets/bank_additional_full.csv"
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
 
-dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
 
-dataset.fillna(method='ffill', inplace=True)
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
 
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-    if dataset[column_name].dtype == object:
-        dataset = pandas.get_dummies(dataset, columns=[column_name])
-    else:
-        dataset[column_name] = ss.fit_transform(dataset[[column_name]])
+# Get estimators
+estimators = get_estimators()
 
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
+single_model_results = fit_single_models(X, Y, estimators, kfold)
 
-seed = 42
-kfold = model_selection.StratifiedKFold(n_splits=K_SPLITS, random_state=seed)
+# Run scoring for best params
+score_hard = run_neural_network_committee_score(X = X, Y = Y, estimators = estimators, 
+                                                voting_option = "hard", kfold = kfold)
 
-# create single models
-mlp44 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,30), activation='tanh', random_state=seed) # 0.946
-mlp48 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,30), activation='relu', random_state=seed) # 0.943
-mlp42 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,3), activation='tanh', random_state=seed)  # 0.937
-mlp16 = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(30,3), activation='relu', random_state=seed) # 0.936
-mlp10 = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(30,3), activation='tanh', random_state=seed) # 0.933
+for name, mean in single_model_results:
+    print("%s result mean: %0.4f" % (name, mean))
 
-#Fitting single models
-results = model_selection.cross_val_score(mlp44, X, Y, cv=kfold)
-print('MLP44: ', results.mean())
+print("Neural network committee (hard) score: %0.4f" % score_hard)
 
-results = model_selection.cross_val_score(mlp48, X, Y, cv=kfold)
-print('MLP48: ', results.mean())
+# Run scoring for best params
+score_soft = run_neural_network_committee_score(X = X, Y = Y, estimators = estimators, 
+                                                voting_option = "soft", kfold = kfold)
 
-results = model_selection.cross_val_score(mlp42, X, Y, cv=kfold)
-print('MLP42: ', results.mean())
-
-results = model_selection.cross_val_score(mlp16, X, Y, cv=kfold)
-print('MLP16: ', results.mean())
-
-results = model_selection.cross_val_score(mlp10, X, Y, cv=kfold)
-print('MLP10: ', results.mean())
-
-# create the sub models
-estimators = [
-    ('mlp44', mlp44),
-    ('mlp48', mlp48),
-    ('mlp42', mlp42),
-    ('mlp16', mlp16),
-    ('mlp10', mlp10),
-]
-
-# create the ensemble model
-ensemble = VotingClassifier(estimators, voting='hard')
-results = model_selection.cross_val_score(ensemble, X, Y, cv=kfold)
-print(results.mean())
+print("Neural network committee (soft) score: %0.4f" % score_soft)
