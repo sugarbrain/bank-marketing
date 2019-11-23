@@ -1,63 +1,110 @@
-# Voting Ensemble for Classification
+# -*- coding: utf-8 -*-
+
 import pandas
-from sklearn import model_selection
-from sklearn.ensemble import VotingClassifier
-from sklearn import preprocessing
+import numpy as np
+from sklearn import tree
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import RidgeClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn import model_selection
+
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
+
+SEED = 42
+np.random.seed(SEED)
+
+# Full train set
+train_file = "../datasets/train.csv"
+
+
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
+
+    test_size = 1.0 - size
+
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
+
+    return train
+
+
+def get_estimators():
+    # Classifiers with best params
+    dt = tree.DecisionTreeClassifier(criterion='gini',
+                                     max_depth=5,
+                                     random_state=SEED)
+    rf = RandomForestClassifier(n_estimators=29,
+                                max_features='sqrt',
+                                random_state=SEED)
+    knn = KNeighborsClassifier(metric="euclidean", n_neighbors=13)
+    mlpc = MLPClassifier(solver='sgd',
+                         hidden_layer_sizes=(43, 2),
+                         random_state=SEED)
+
+    estimators = [
+        ('DecisionTree', dt),
+        ('RandomForestClassifier', rf),
+        ('KNeighborsClassifier', knn),
+        ('MLPClassifier', mlpc),
+    ]
+
+    return estimators
+
+
+def fit_single_models(X, Y, estimators, kfold):
+    results = list()
+
+    for name, clf in estimators:
+        result = model_selection.cross_val_score(clf, X, Y, cv=kfold)
+        results.append((name, result.mean()))
+
+    return results
+
+
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
+
+    return kf
+
+
+def run_committee_score(X, Y, estimators, kfold):
+
+    # create the ensemble model
+    ensemble = VotingClassifier(estimators, voting='hard')
+    results = model_selection.cross_val_score(ensemble, X, Y, cv=kfold)
+
+    return results.mean()
+
 
 K_SPLITS = 10
 
-file_name = "../datasets/bank_additional_full.csv"
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
 
-dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
 
-dataset.fillna(method='ffill', inplace=True)
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
 
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-    if dataset[column_name].dtype == object:
-        dataset = pandas.get_dummies(dataset, columns=[column_name])
-    else:
-        dataset[column_name] = ss.fit_transform(dataset[[column_name]])
+# Get estimators
+estimators = get_estimators()
 
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
+single_model_results = fit_single_models(X, Y, estimators, kfold)
 
-seed = 42
-kfold = model_selection.KFold(n_splits=K_SPLITS, random_state=seed)
+# Run scoring for best params
+score = run_committee_score(X, Y, estimators, kfold)
 
-# create single models
-rf = RandomForestClassifier(n_estimators=16, max_features=None, random_state=seed)
-knn = KNeighborsClassifier(metric="euclidean", n_neighbors=11)
-mlpc = MLPClassifier(solver='adam', hidden_layer_sizes=(30, 30), 
-                     activation="tanh", random_state=seed)
-rg = RidgeClassifier(random_state=seed)
+for name, mean in single_model_results:
+    print("%s result mean: %0.4f" % (name, mean))
 
-#Fitting single models
-#results = model_selection.cross_val_score(rf, X, Y, cv=kfold)
-#print('RandomForestClassifier: ', results.mean())
-
-#results = model_selection.cross_val_score(knn, X, Y, cv=kfold)
-#print('KNeighborsClassifier: ', results.mean())
-
-#results = model_selection.cross_val_score(mlpc, X, Y, cv=kfold)
-#print('MLPClassifier: ', results.mean())
-
-#results = model_selection.cross_val_score(rg, X, Y, cv=kfold)
-#print('RidgeClassifier: ', results.mean())
-
-# create the sub models
-estimators = [
-    ('RandomForestClassifier', rf),
-    ('KNeighborsClassifier', knn),
-    ('MLPClassifier', mlpc),
-    ('RidgeClassifier', rg),
-]
-
-# create the ensemble model
-ensemble = VotingClassifier(estimators, voting='hard')
-results = model_selection.cross_val_score(ensemble, X, Y, cv=kfold)
-print(results.mean())
+print("Committee score: %0.4f" % score)

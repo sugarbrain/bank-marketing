@@ -1,0 +1,5 @@
+DecisionTree result mean: 0.9048
+RandomForestClassifier result mean: 0.9069
+KNeighborsClassifier result mean: 0.9050
+MLPClassifier result mean: 0.9084
+Committee score: 0.9090
