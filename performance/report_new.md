@@ -770,3 +770,14 @@ soft | **0.9116**
 hard | **0.9090**
 
 Como pode ser observado acima, o comitê com `voting` setado como **soft** apresentou uma acurácia média ligeiramente maior.
+
+### Comparação de performance de algoritmos
+
+A partir das buscas de melhores combinações de parâmetros para os algoritmos escolhidos acima, foi possível reunir todos os classificadores em sua melhor fase e comparar o resultados de aprendizado entre eles.
+
+Abaixo encontra-se o plot da comparação de performance dos classificadores.
+![Algorithms Performance Comparation](../performance/plots/performance_blox_plot.png)
+
+### Significância estatística
+
+[...]
