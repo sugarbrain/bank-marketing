@@ -735,4 +735,38 @@ voting |  Acurácia |
 soft | **0.8993**
 hard | **0.9064**
 
-O comitê com `voting` setado como **hard** apresentou uma acurácia média ligeiramente maior.
+Como pode ser observado acima, o comitê com `voting` setado como **hard** apresentou uma acurácia média ligeiramente maior.
+
+### Comitê heterogêneo
+
+Assim como visto no Comitê de Redes Neurais, o Comitê heterogêneo é um método de aprendizado, supervisionado ou não, cujo o objetivo é aumentar a capacidade de generalização de parâmetros. Porém, utilizando diferentes estimadores. Para esse experimento, selecionamos os estimadores trabalhados até então e os parâmetros que melhor perfomaram na busca por suas melhores configurações:
+
+Name | Parâmetros  | Acurácia média
+-------- | ------| -------------------- |
+DecisionTree | {criterion='gini', max_depth=5, random_state=42} | 0.9048
+RandomForestClassifier | {n_estimators=29, max_features='sqrt', random_state=42} | 0.9069
+KNeighborsClassifier | {metric="euclidean", n_neighbors=13} | 0.9050
+MLPClassifier | {solver='sgd', hidden_layer_sizes=(43, 2), random_state=42} |  0.9084
+
+Os 4 estimadores foram agrupados utilizando o `VotingClassifier`, que é um comitê baseado no método de votação majoritária. Para buscar a melhor configuração, variamos o parâmetro *voting*, que pode assumir os valores `'hard'` e`'soft'`.
+
+```python
+    estimators = [
+        ('DecisionTree', dt),
+        ('RandomForestClassifier', rf),
+        ('KNeighborsClassifier', knn),
+        ('MLPClassifier', mlpc),
+    ]
+
+ensembleSoft = VotingClassifier(estimators, voting='soft')
+ensembleHard = VotingClassifier(estimators, voting='hard')
+```
+Dessa forma, os resultados foram:
+
+##### Resultado comitê heterogêno
+voting |  Acurácia | 
+-------- | ------ |
+soft | **0.9116**
+hard | **0.9090**
+
+Como pode ser observado acima, o comitê com `voting` setado como **soft** apresentou uma acurácia média ligeiramente maior.

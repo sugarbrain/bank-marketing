@@ -75,10 +75,10 @@ def setup_kfold(X, Y, n_splits):
     return kf
 
 
-def run_committee_score(X, Y, estimators, kfold):
+def run_committee_score(X, Y, estimators, voting_option, kfold):
 
     # create the ensemble model
-    ensemble = VotingClassifier(estimators, voting='hard')
+    ensemble = VotingClassifier(estimators, voting=voting_option)
     results = model_selection.cross_val_score(ensemble, X, Y, cv=kfold)
 
     return results.mean()
@@ -102,9 +102,20 @@ estimators = get_estimators()
 single_model_results = fit_single_models(X, Y, estimators, kfold)
 
 # Run scoring for best params
-score = run_committee_score(X, Y, estimators, kfold)
+score_soft = run_committee_score(X = X, Y = Y, estimators = estimators, 
+                            voting_option = "soft", kfold = kfold)
+
+# Run scoring for best params
+score_hard = run_committee_score(X = X, Y = Y, estimators = estimators, 
+                                                voting_option = "hard", kfold = kfold)
 
 for name, mean in single_model_results:
     print("%s result mean: %0.4f" % (name, mean))
 
-print("Committee score: %0.4f" % score)
+print("Heterogen committee (hard) score: %0.4f" % score_hard)
+
+# Run scoring for best params
+score_soft = run_committee_score(X = X, Y = Y, estimators = estimators, 
+                            voting_option = "soft", kfold = kfold)
+
+print("Heterogen committee (soft) score: %0.4f" % score_soft)
