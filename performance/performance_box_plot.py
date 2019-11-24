@@ -1,88 +1,151 @@
 import pandas
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import tree
-from sklearn import model_selection
-from sklearn import preprocessing
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import VotingClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
-seed = 42
+# Tira limite de vizualição do dataframe quando printado
+pandas.set_option('display.max_columns', None)
+pandas.set_option('display.max_rows', None)
 
-file_name = "../datasets/bank_additional_full.csv"
+SEED = 42
+np.random.seed(SEED)
 
-dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
+# Full train set
+train_file = "../datasets/train.csv"
 
-dataset.fillna(method='ffill', inplace=True)
 
-ss = preprocessing.StandardScaler()
-for column_name in dataset.columns:
-   if dataset[column_name].dtype == object:
-       dataset = pandas.get_dummies(dataset, columns=[column_name])
-   else:
-       dataset[column_name] = ss.fit_transform(dataset[[column_name]])
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(train_file)
 
-X = dataset.values[:, 0:-2]
-Y = dataset['y_no']
+    test_size = 1.0 - size
 
-kfold = model_selection.StratifiedKFold(n_splits=10, random_state=seed)
+    # use 20% of the train to search best params
+    train, _ = train_test_split(dataset,
+                                test_size=test_size,
+                                random_state=SEED)
 
-# prepare models
-models = []
-models.append(('Decision Tree', tree.DecisionTreeClassifier(criterion="gini", max_depth=12, random_state=seed)))
+    return train
 
-models.append(('kNN', KNeighborsClassifier(metric="euclidean", n_neighbors=11)))
+def setup_kfold(X, Y, n_splits):
+    kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
+    kf.get_n_splits(X)
 
-models.append(('Neural Networks', MLPClassifier(solver="adam", hidden_layer_sizes=(30,30), activation="tanh", random_state=seed)))
+    return kf
 
-models.append(('Random Forest', RandomForestClassifier(n_estimators=12,max_features=6, random_state=seed)))
+def get_neural_networks_committee_estimators():
+        # Classifiers with best params
+    sgd43_2 = MLPClassifier(solver = 'sgd', 
+                            hidden_layer_sizes=(42,2)) # 0.908
+    sgd6_1 = MLPClassifier(solver = 'sgd', 
+                           hidden_layer_sizes=(6,1)) # 0.907    
+    sgd18_2 = MLPClassifier(solver = 'sgd',
+                            hidden_layer_sizes=(18,2)) # 0.907
+    sgd36_1 = MLPClassifier(solver = 'sgd',
+                            hidden_layer_sizes=(36,1)) # 0.907
+    ada2_1 = MLPClassifier(solver = 'adam', 
+                           hidden_layer_sizes=(2,1)) # 0.907
 
-# create single models
-mlp44 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,30), activation='tanh', random_state=seed)
-mlp48 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,30), activation='relu', random_state=seed)
-mlp42 = MLPClassifier(solver='adam', hidden_layer_sizes=(30,3), activation='tanh', random_state=seed)
-mlp16 = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(30,3), activation='relu', random_state=seed)
-mlp10 = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(30,3), activation='tanh', random_state=seed)
+    estimators = [
+        ('sgd43_2', sgd43_2),
+        ('sgd6_1', sgd6_1),
+        ('sgd18_2', sgd18_2),
+        ('sgd36_1', sgd36_1),
+        ('ada2_1', ada2_1),
+    ]
+    return estimators
 
-# create the sub models
-MLP_estimators = [
-('mlp44', mlp44),
-('mlp48', mlp48),
-('mlp42', mlp42),
-('mlp16', mlp16),
-('mlp10', mlp10),
-]
+def get_heterogen_committee_estimators():
+    # Classifiers with best params
+    dt = tree.DecisionTreeClassifier(criterion='gini',
+                                     max_depth=5,
+                                     random_state=SEED)
+    rf = RandomForestClassifier(n_estimators=29,
+                                max_features='sqrt',
+                                random_state=SEED)
+    knn = KNeighborsClassifier(metric="euclidean", n_neighbors=13)
+    mlpc = MLPClassifier(solver='sgd',
+                         hidden_layer_sizes=(43, 2),
+                         random_state=SEED)
 
-models.append(('Neural Network Comittee', VotingClassifier(MLP_estimators, voting='hard')))
+    estimators = [
+        ('DecisionTree', dt),
+        ('RandomForestClassifier', rf),
+        ('KNeighborsClassifier', knn),
+        ('MLPClassifier', mlpc),
+    ]
 
-rf = RandomForestClassifier(n_estimators=16, max_features=None, random_state=seed)
-knn = KNeighborsClassifier(metric="euclidean", n_neighbors=11)
-mlpc = MLPClassifier(solver='adam', hidden_layer_sizes=(30, 30),
-activation="tanh", random_state=seed)
+    return estimators
 
-heterogenous_estimators = [
-('RandomForestClassifier', rf),
-('KNeighborsClassifier', knn),
-('MLPClassifier', mlpc)
-]
+def get_models():
+    # Estimators with best params
+    dt = tree.DecisionTreeClassifier(criterion='gini',
+                                     max_depth=5,
+                                     random_state=SEED)
+    rf = RandomForestClassifier(n_estimators=29,
+                                max_features='sqrt',
+                                random_state=SEED)
+    knn = KNeighborsClassifier(metric="euclidean", n_neighbors=13)
+    mlpc = MLPClassifier(solver='sgd',
+                         hidden_layer_sizes=(43, 2),
+                         random_state=SEED)
+    nnc = VotingClassifier(get_neural_networks_committee_estimators(), voting='hard')
+    hc = VotingClassifier(get_heterogen_committee_estimators(), voting='soft')
 
-models.append(('Heterogeneous Comittee', VotingClassifier(heterogenous_estimators, voting='hard')))
+    models = [
+        ('DecisionTree', dt),
+        ('RandomForestClassifier', rf),
+        ('KNeighborsClassifier', knn),
+        ('MLPClassifier', mlpc),
+        ('NeuralNetworkCommitteeClassifier', nnc),
+        ('HeterogenCommitteeClassifier', hc)
+    ]
 
-# evaluate each model in turn
-results = []
+    return models
+
+
+def get_model_score(model, X, Y, kfold):
+    return cross_val_score(model, X, Y, cv=kfold, scoring='accuracy')
+
+def plot(names, scores):
+    #options
+    fig = plt.figure(figsize=(25, 8))
+    fig.suptitle('Algorithm Comparison')
+    ax = fig.add_subplot(111)
+    ax.set_xticklabels(names)
+    plt.boxplot(scores)
+    plt.margins(x=0.005)
+    plt.rc('font', size=14)
+    plt.xticks(rotation=90)
+    plt.grid(linestyle='--')
+    plt.show()
+
+
+scores = []
 names = []
-scoring = 'accuracy'
+
+K_SPLITS = 10
+
+# split train set by 20%
+train = get_train_set(train_file, 0.20)
+
+# separate class from other columns
+X = train.values[:, :-1]
+Y = train['y']
+
+# KFold
+kfold = setup_kfold(X, Y, K_SPLITS)
+
+models = get_models()
+
 for name, model in models:
-	cv_results = model_selection.cross_val_score(model, X, Y, cv=kfold, scoring=scoring)
-	results.append(cv_results)
+	model_score = get_model_score(model, X, Y, kfold)
+	scores.append(model_score)
 	names.append(name)
-	msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
-	print(msg)
-# boxplot algorithm comparison
-fig = plt.figure()
-fig.suptitle('Algorithm Comparison')
-ax = fig.add_subplot(111)
-plt.boxplot(results)
-ax.set_xticklabels(names)
-plt.show()
+
+plot(names, scores)
