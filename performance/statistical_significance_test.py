@@ -23,14 +23,8 @@ np.random.seed(SEED)
 train_file = "../datasets/train.csv"
 
 
-def get_train_set(filepath, size=0.20):
+def get_dataset(filepath):
     dataset = pandas.read_csv(train_file)
-
-    test_size = 1.0 - size
-
-    train, _ = train_test_split(dataset,
-                                test_size=test_size,
-                                random_state=SEED)
 
     return dataset
 
@@ -48,11 +42,40 @@ def get_estimators():
                          hidden_layer_sizes=(43, 2),
                          random_state=SEED)
 
+    heterogen_committee_estimators = [
+        ('DecisionTree', dt),
+        ('RandomForestClassifier', rf),
+        ('KNeighborsClassifier', knn),
+        ('MLPClassifier', mlpc),
+    ]
+
+    # Heterogen Committee
+    hc = VotingClassifier(heterogen_committee_estimators, voting='soft')
+
+    # Neural Networks Committee
+    sgd43_2 = MLPClassifier(solver='sgd', hidden_layer_sizes=(42, 2))  # 0.908
+    sgd6_1 = MLPClassifier(solver='sgd', hidden_layer_sizes=(6, 1))  # 0.907
+    sgd18_2 = MLPClassifier(solver='sgd', hidden_layer_sizes=(18, 2))  # 0.907
+    sgd36_1 = MLPClassifier(solver='sgd', hidden_layer_sizes=(36, 1))  # 0.907
+    ada2_1 = MLPClassifier(solver='adam', hidden_layer_sizes=(2, 1))  # 0.907
+
+    neural_networks_estimators = [
+        ('sgd43_2', sgd43_2),
+        ('sgd6_1', sgd6_1),
+        ('sgd18_2', sgd18_2),
+        ('sgd36_1', sgd36_1),
+        ('ada2_1', ada2_1),
+    ]
+
+    nnc = VotingClassifier(neural_networks_estimators, voting='hard')
+
     estimators = [
         ('DecisionTree', dt),
         ('RandomForestClassifier', rf),
         ('KNeighborsClassifier', knn),
         ('MLPClassifier', mlpc),
+        ('HeterogenCommitteeVotingClassifier', hc),
+        ('NeuralNetworksCommitteeVotingClassifier', nnc),
     ]
 
     return estimators
@@ -104,7 +127,7 @@ def run_significance_test(scores):
 K_SPLITS = 10
 
 # split train set by 80%
-train = get_train_set(train_file, 0.8)
+train = get_dataset(train_file)
 
 # separate class from other columns
 X = train.values[:, :-1]
