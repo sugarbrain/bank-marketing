@@ -17,7 +17,7 @@ weighted avg       0.91      0.92      0.91      7723
 
 * Accuracy:
   - Train split accuracy: 0.9160048342541437
-  - Train split accuracy: 0.9171306487116405
+  - Test split accuracy: 0.9171306487116405
 
 
 => RandomForestClassifier classifier report <=
@@ -39,7 +39,7 @@ weighted avg       0.90      0.91      0.90      7723
 
 * Accuracy:
   - Train split accuracy: 0.9991799033149171
-  - Train split accuracy: 0.9094911303897449
+  - Test split accuracy: 0.9094911303897449
 
 
 => KNeighborsClassifier classifier report <=
@@ -61,7 +61,7 @@ weighted avg       0.89      0.90      0.89      7723
 
 * Accuracy:
   - Train split accuracy: 0.9156595303867403
-  - Train split accuracy: 0.9045707626569985
+  - Test split accuracy: 0.9045707626569985
 
 
 => MLPClassifier classifier report <=
@@ -83,7 +83,7 @@ weighted avg       0.91      0.92      0.91      7723
 
 * Accuracy:
   - Train split accuracy: 0.9125517955801105
-  - Train split accuracy: 0.9154473650135958
+  - Test split accuracy: 0.9154473650135958
 
 
 => HeterogenCommitteeVotingClassifier classifier report <=
@@ -105,7 +105,7 @@ weighted avg       0.90      0.91      0.90      7723
 
 * Accuracy:
   - Train split accuracy: 0.9513121546961326
-  - Train split accuracy: 0.9135051145927748
+  - Test split accuracy: 0.9135051145927748
 
 
 => NeuralNetworksCommitteeVotingClassifier classifier report <=
@@ -127,4 +127,4 @@ weighted avg       0.91      0.91      0.91      7723
 
 * Accuracy:
   - Train split accuracy: 0.9137171961325967
-  - Train split accuracy: 0.9147999482066554
+  - Test split accuracy: 0.9147999482066554

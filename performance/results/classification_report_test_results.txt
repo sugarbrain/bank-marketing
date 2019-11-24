@@ -1,0 +1,130 @@
+=> DecisionTree classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.96      0.95      9144
+           1       0.65      0.52      0.58      1153
+
+    accuracy                           0.91     10297
+   macro avg       0.80      0.74      0.76     10297
+weighted avg       0.91      0.91      0.91     10297
+
+
+* Confusion matrix:
+[[8823  321]
+ [ 556  597]]
+
+* Accuracy:
+  - Train split accuracy: 0.9171603379625134
+  - Test split accuracy: 0.914829562008352
+
+
+=> RandomForestClassifier classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.96      0.95      9144
+           1       0.65      0.51      0.57      1153
+
+    accuracy                           0.91     10297
+   macro avg       0.79      0.74      0.76     10297
+weighted avg       0.91      0.91      0.91     10297
+
+
+* Confusion matrix:
+[[8821  323]
+ [ 566  587]]
+
+* Accuracy:
+  - Train split accuracy: 0.9991583309054417
+  - Test split accuracy: 0.9136641740312712
+
+
+=> KNeighborsClassifier classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.93      0.97      0.95      9144
+           1       0.64      0.41      0.50      1153
+
+    accuracy                           0.91     10297
+   macro avg       0.79      0.69      0.72     10297
+weighted avg       0.90      0.91      0.90     10297
+
+
+* Confusion matrix:
+[[8886  258]
+ [ 685  468]]
+
+* Accuracy:
+  - Train split accuracy: 0.9163510407562073
+  - Test split accuracy: 0.9084199281344081
+
+
+=> MLPClassifier classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.96      0.95      9144
+           1       0.62      0.57      0.60      1153
+
+    accuracy                           0.91     10297
+   macro avg       0.78      0.76      0.77     10297
+weighted avg       0.91      0.91      0.91     10297
+
+
+* Confusion matrix:
+[[8743  401]
+ [ 492  661]]
+
+* Accuracy:
+  - Train split accuracy: 0.913631802143019
+  - Test split accuracy: 0.9132757113722444
+
+
+=> HeterogenCommitteeVotingClassifier classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.97      0.95      9144
+           1       0.68      0.50      0.57      1153
+
+    accuracy                           0.92     10297
+   macro avg       0.81      0.73      0.76     10297
+weighted avg       0.91      0.92      0.91     10297
+
+
+* Confusion matrix:
+[[8876  268]
+ [ 582  571]]
+
+* Accuracy:
+  - Train split accuracy: 0.9504386390858178
+  - Test split accuracy: 0.9174516849567835
+
+
+=> NeuralNetworksCommitteeVotingClassifier classifier report <=
+
+* Classification report:
+              precision    recall  f1-score   support
+
+           0       0.95      0.96      0.95      9144
+           1       0.63      0.58      0.61      1153
+
+    accuracy                           0.92     10297
+   macro avg       0.79      0.77      0.78     10297
+weighted avg       0.91      0.92      0.91     10297
+
+
+* Confusion matrix:
+[[8760  384]
+ [ 486  667]]
+
+* Accuracy:
+  - Train split accuracy: 0.914829562008352
+  - Test split accuracy: 0.915509371661649

@@ -95,7 +95,7 @@ def run_classification_report(estimators, X_train, X_test, y_train, y_test):
 
 * Accuracy:
   - Train split accuracy: {clf.score(X_train, y_train)}
-  - Train split accuracy: {clf.score(X_test, y_test)}
+  - Test split accuracy: {clf.score(X_test, y_test)}
 """)
 
 
