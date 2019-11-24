@@ -87,15 +87,19 @@ def run_dt_score(X, Y, params, kfold):
 
 
 def plot(scores):
-    plt.figure(figsize=(50, 8))
+    # options
+    plt.figure(figsize=(25, 8))
     plt.margins(x=0.005)
+    plt.rc('font', size=14)
+    plt.xticks(rotation=90)
+    plt.grid(linestyle='--')
+    
     x = list(map(lambda x: x["id"], scores))  # names
     y = list(map(lambda x: x["result"], scores))  # scores
 
     plt.plot(x, y, 'o--')
-    plt.suptitle('Busca de Parametros Decision Tree')
-    plt.tight_layout()
-    plt.grid(linestyle='--')
+    plt.suptitle('Busca de Parametros: Decision Tree')
+
     plt.show()
 
 
