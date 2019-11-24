@@ -700,3 +700,39 @@ S29 =>  { 'n_estimators': 29, 'max_features': 'sqrt' }
 ```
 
 A configuração **S16** foi escolhida para representar a melhor acurácia do algoritmo *random forest*, por ter o menor número de árvores (16).
+
+### Comitê de Redes Neurais
+
+Um comitê de Redes Neurais é um método de aprendizado, supervisionado ou não, cujo o objetivo é aumentar a capacidade de generalização de parâmetros de estimadores MLP. Para esse experimento, selecionamos as redes que melhor performaram na busca pelos melhores parâmetros:
+
+Variação |solver |  hidden_layer_sizes  | Acurácia média
+-------- | ------| -------------------- | ------------ |
+SGD43_2	 | sgd	 | (42, 2) 		|  0.9082
+SGD6_1 	 | sgd	 | (6, 1) 		|  0.8951
+SGD18_2  | sgd	 | (18, 2) 		|  0.9045
+SGD36_1	 | sgd	 | (36, 1) 		|  0.8954
+ADA2_1 	 | adam  | (2, 1) 		|  0.9014
+
+As 5 redes neurais foram agrupadas utilizando o `VotingClassifier`, que é um comitê baseado no método de votação majoritária. Para buscar a melhor configuração, variamos o parâmetro *voting*, que pode assumir os valores `'hard'` e`'soft'`.
+
+```python
+estimators = [
+    ('sgd43_2', sgd43_2),
+    ('sgd6_1', sgd6_1),
+    ('sgd18_2', sgd18_2),
+    ('sgd36_1', sgd36_1),
+    ('ada2_1', ada2_1),
+]
+
+ensembleSoft = VotingClassifier(estimators, voting='soft')
+ensembleHard = VotingClassifier(estimators, voting='hard')
+```
+Dessa forma, os resultados foram:
+
+##### Resultado comitê de redes neurais
+voting |  Acurácia | 
+-------- | ------ |
+soft | **0.8993**
+hard | **0.9064**
+
+O comitê com `voting` setado como **hard** apresentou uma acurácia média ligeiramente maior.
