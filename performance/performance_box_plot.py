@@ -16,21 +16,21 @@ pandas.set_option('display.max_rows', None)
 SEED = 42
 np.random.seed(SEED)
 
-# Full train set
-train_file = "../datasets/train.csv"
+# Full test set
+test_file = "../datasets/test.csv"
 
 
-def get_train_set(filepath, size=0.20):
-    dataset = pandas.read_csv(train_file)
+def get_test_set(filepath, size=0.20):
+    dataset = pandas.read_csv(test_file)
 
     test_size = 1.0 - size
 
     # use 20% of the train to search best params
-    train, _ = train_test_split(dataset,
+    test, _ = train_test_split(dataset,
                                 test_size=test_size,
                                 random_state=SEED)
 
-    return train
+    return test
 
 def setup_kfold(X, Y, n_splits):
     kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
@@ -98,12 +98,12 @@ def get_models():
     hc = VotingClassifier(get_heterogen_committee_estimators(), voting='soft')
 
     models = [
-        ('DecisionTree', dt),
-        ('RandomForestClassifier', rf),
-        ('KNeighborsClassifier', knn),
-        ('MLPClassifier', mlpc),
-        ('NeuralNetworkCommitteeClassifier', nnc),
-        ('HeterogenCommitteeClassifier', hc)
+        ('Decision Tree', dt),
+        ('Random Forest', rf),
+        ('K Neighbors', knn),
+        ('MLP', mlpc),
+        ('Neural Network Committee', nnc),
+        ('Heterogen Committee', hc)
     ]
 
     return models
@@ -115,13 +115,11 @@ def get_model_score(model, X, Y, kfold):
 def plot(names, scores):
     #options
     fig = plt.figure(figsize=(25, 8))
-    fig.suptitle('Algorithm Comparison')
     ax = fig.add_subplot(111)
     ax.set_xticklabels(names)
     plt.boxplot(scores)
     plt.margins(x=0.005)
-    plt.rc('font', size=14)
-    plt.xticks(rotation=90)
+    plt.rc('font', size=18)
     plt.grid(linestyle='--')
     plt.show()
 
@@ -131,12 +129,12 @@ names = []
 
 K_SPLITS = 10
 
-# split train set by 20%
-train = get_train_set(train_file, 0.20)
+# split test set by 20%
+test = get_test_set(test_file, 0.20)
 
 # separate class from other columns
-X = train.values[:, :-1]
-Y = train['y']
+X = test.values[:, :-1]
+Y = test['y']
 
 # KFold
 kfold = setup_kfold(X, Y, K_SPLITS)

@@ -783,7 +783,7 @@ Para verificar se a amostra possuía significância estatística, foi utilizada 
 A partir das buscas de melhores combinações de parâmetros para os algoritmos escolhidos acima, foi possível reunir todos os classificadores em sua melhor fase e comparar o resultados de aprendizado entre eles.
 
 Abaixo encontra-se o plot da comparação de performance dos classificadores.
-![Algorithms Performance Comparation](../performance/plots/performance_blox_plot.png)
+![Algorithms Performance Comparation](../performance/plots/performance_box_plot.png)
 
 Executando todos os algoritmos em suas melhores configurações com o conjunto de teste, tivemos o seguinte resultado geral:
 
