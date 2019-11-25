@@ -16,21 +16,21 @@ pandas.set_option('display.max_rows', None)
 SEED = 42
 np.random.seed(SEED)
 
-# Full test set
-test_file = "../datasets/test.csv"
+# Full train set
+train_file = "../datasets/train.csv"
 
 
-def get_test_set(filepath, size=0.20):
-    dataset = pandas.read_csv(test_file)
+def get_train_set(filepath, size=0.20):
+    dataset = pandas.read_csv(filepath)
 
     test_size = 1.0 - size
 
     # use 20% of the train to search best params
-    test, _ = train_test_split(dataset,
+    train, _ = train_test_split(dataset,
                                 test_size=test_size,
                                 random_state=SEED)
 
-    return test
+    return train
 
 def setup_kfold(X, Y, n_splits):
     kf = StratifiedKFold(n_splits=n_splits, random_state=SEED)
@@ -130,11 +130,11 @@ names = []
 K_SPLITS = 10
 
 # split test set by 20%
-test = get_test_set(test_file, 0.20)
+train = get_train_set(train_file, 0.20)
 
 # separate class from other columns
-X = test.values[:, :-1]
-Y = test['y']
+X = train.values[:, :-1]
+Y = train['y']
 
 # KFold
 kfold = setup_kfold(X, Y, K_SPLITS)
