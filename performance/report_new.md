@@ -771,19 +771,48 @@ hard | **0.9090**
 
 Como pode ser observado acima, o comitê com `voting` setado como **soft** apresentou uma acurácia média ligeiramente maior.
 
-### Comparação de performance de algoritmos
-
-A partir das buscas de melhores combinações de parâmetros para os algoritmos escolhidos acima, foi possível reunir todos os classificadores em sua melhor fase e comparar o resultados de aprendizado entre eles.
-
-Abaixo encontra-se o plot da comparação de performance dos classificadores.
-![Algorithms Performance Comparation](../performance/plots/performance_blox_plot.png)
-
 ### Significância estatística
 
 O teste de significância estatística é feito para determinar se existem discrepâncias estatísticas entre diferentes conjuntos de dados. Para se realizar esse teste, foi escolhido o **Kruskal-Wallis H-test**, que é eficiente para amostras com muitos dados, e foram passados os escores do *kfold*, retornados pelo método *cross_val_score* de cada algoritmo de classificação executado anteriormente, utilizando seus melhores parâmetros obtidos.
 
 Um teste de *Kruskal-Wallis* significante indica que ao menos uma amostra domina estocasticamente (de modo aleatório e não determinístico) uma outra amostra. 
 
-Para verificar se a amostra possuía significância estatística, foi utilizada a medida do *p-value*, que é basicamente a chance de uma estatística observada ocorrer ao acaso. Como limite, foi utilizado um alpha de **0.05**, representando que se a chance de um dado observado não conseguir rejeitar a hipótese nula for maior que **5%**, ele é estatisticamente insignificante, ao passo que quanto menor for o valor do *p-value*, maior é sua significância estatística.
+Para verificar se a amostra possuía significância estatística, foi utilizada a medida do *p-value*, que é basicamente a chance de uma estatística observada ocorrer ao acaso. Como limite, foi utilizado um alpha de **0.05**, representando que se a chance de um dado observado não conseguir rejeitar a hipótese nula for maior que **5%**, ele é estatisticamente insignificante, ao passo que quanto menor for o valor do *p-value*, maior é sua significância estatística. Como resultado do teste, foi possível se obter **16.315** como a estatística de Kruskal-Wallis H e **p=0.006**, sendo assim, já que o p é menor do que o alpha (0.05), o H0 é rejeitado, ou seja, os dados têm origem de **diferentes** distribuições.
 
-Como resultado do teste, foi possível se obter **16.315** como a estatística de Kruskal-Wallis H e **p=0.006**, sendo assim, já que o p é menor do que o alpha (0.05), o H0 é rejeitado, ou seja, os dados têm origem de **diferentes** distribuições.
+### Comparação de performance e resultado final
+A partir das buscas de melhores combinações de parâmetros para os algoritmos escolhidos acima, foi possível reunir todos os classificadores em sua melhor fase e comparar o resultados de aprendizado entre eles.
+
+Abaixo encontra-se o plot da comparação de performance dos classificadores.
+![Algorithms Performance Comparation](../performance/plots/performance_blox_plot.png)
+
+Executando todos os algoritmos em suas melhores configurações com o conjunto de teste, tivemos o seguinte resultado geral:
+
+Classificador | Acurácia
+--- | ---
+Árvore de Decisão | 0.914
+Random Forest | 0.913
+Rede Neural | 0.913
+KNN | 0.908
+Comitê de Redes Neurais | 0.915
+Comitê Heterogêneo | 0.917
+
+Assim, concluímos que o melhor classificador foi o **Comitê Heterogêneo**. Utilizamos o `classification_report` e `confusion_matrix` para verificar outros dados sobre o comitê heterogêneo além da acurácia média. Abaixo encontram-se o relatório de classificação do algoritmo vencedor:
+
+``` 
+# Relatório de classificação
+              precision    recall  f1-score   support
+
+           0       0.94      0.97      0.95      9144
+           1       0.68      0.50      0.57      1153
+
+    accuracy                           0.92     10297
+   macro avg       0.81      0.73      0.76     10297
+weighted avg       0.91      0.92      0.91     10297
+
+# Matriz de confusão
+    0     1
+0 [8876  268]
+1 [ 582  571]]
+```
+
+Com o relatório de classificação do comitê heterogêneo, foi possível observar que esse classificador teve mais êxito em classificar clientes na classe `0` (não) do que em `1` (sim), com base nos valores de `precision` e `recall` e na matriz de confusão.
