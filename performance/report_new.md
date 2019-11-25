@@ -259,7 +259,7 @@ Para a base de dados em questão, foi utilizado o **MLPClassifier** para constru
 
 Sobre o *hidden_layer_sizes*, ele recebe o i-ésimo elemento que representa o número de neurônios na i-ésima camada oculta. Quanto ao parâmetro ‘solver’, foram utilizadas três tipos diferentes, são eles: {`'lbfgs'`, `'sgd'`, `'adam'`}. `'lbfgs'` é um otimizador na família de métodos quasi-Newton. Já `'sgd'` refere-se à descida do gradiente estocástico e `'adam'` refere-se a um otimizador estocástico baseado em gradiente proposto por Kingma, Diederik e Jimmy Ba. O ‘solver’ padrão, que é `'adam'`, funciona muito bem em conjuntos de dados relativamente grandes (com milhares de amostras de treinamento ou mais) em termos de tempo de treinamento e pontuação de validação. Para conjuntos de dados pequenos, no entanto, o `'lbfgs'` pode convergir mais rapidamente e ter um desempenho melhor.
 
-Obtivemos 100 diferentes configurações de parâmetros para a rede neural, as quais foram submetidas a validação cruzada utilizando o `StratifiedKFold` com `k` = 10 em 20% do conjunto de treinamento. Para o parâmetro *hidden_layer_size*, aplicamos uma combinação de no máximo 2 camadas e no máximo 50 neurônios para cada camada por *solver*, a fim de obter uma variedade maior na busca pela melhor configuração. A média dos valores obtidos com o `KFold` foi calculada e guardada para posterior análise.
+Obtivemos 300 diferentes configurações de parâmetros para a rede neural, as quais foram submetidas a validação cruzada utilizando o `StratifiedKFold` com `k` = 10 em 20% do conjunto de treinamento. Para o parâmetro *hidden_layer_size*, aplicamos uma combinação de no máximo 2 camadas e no máximo 50 neurônios para cada camada por *solver*, a fim de obter uma variedade maior na busca pela melhor configuração. A média dos valores obtidos com o `KFold` foi calculada e guardada para posterior análise.
 
 #### Resultados
 
@@ -780,4 +780,10 @@ Abaixo encontra-se o plot da comparação de performance dos classificadores.
 
 ### Significância estatística
 
-[...]
+O teste de significância estatística é feito para determinar se existem discrepâncias estatísticas entre diferentes conjuntos de dados. Para se realizar esse teste, foi escolhido o **Kruskal-Wallis H-test**, que é eficiente para amostras com muitos dados, e foram passados os escores do *kfold*, retornados pelo método *cross_val_score* de cada algoritmo de classificação executado anteriormente, utilizando seus melhores parâmetros obtidos.
+
+Um teste de *Kruskal-Wallis* significante indica que ao menos uma amostra domina estocasticamente (de modo aleatório e não determinístico) uma outra amostra. 
+
+Para verificar se a amostra possuía significância estatística, foi utilizada a medida do *p-value*, que é basicamente a chance de uma estatística observada ocorrer ao acaso. Como limite, foi utilizado um alpha de **0.05**, representando que se a chance de um dado observado não conseguir rejeitar a hipótese nula for maior que **5%**, ele é estatisticamente insignificante, ao passo que quanto menor for o valor do *p-value*, maior é sua significância estatística.
+
+Como resultado do teste, foi possível se obter **16.315** como a estatística de Kruskal-Wallis H e **p=0.006**, sendo assim, já que o p é menor do que o alpha (0.05), o H0 é rejeitado, ou seja, os dados têm origem de **diferentes** distribuições.
