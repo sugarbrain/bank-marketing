@@ -4,7 +4,7 @@ import pandas
 import matplotlib.pyplot as plt
 import numpy as np
 
-file_name = "bank_additional_full.csv"
+file_name = "datasets/bank_additional_full.csv"
 
 dataset = pandas.read_csv(file_name, sep=";", na_values="unknown")
 
